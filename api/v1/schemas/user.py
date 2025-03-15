@@ -9,6 +9,7 @@ from email_validator import validate_email, EmailNotValidError
 class CreateUser(BaseModel):
     email: str
     password: str
+    username: str
 
     @field_validator("email")
     @classmethod

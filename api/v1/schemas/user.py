@@ -49,8 +49,15 @@ class CreateUser(BaseModel):
             raise ValueError("Password must be at least 4 characters long.")
 
         return password
-
-
+    
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls,username: str):
+        username = username.replace(" ","")
+        if not username:
+            raise HTTPException(
+                status_code=400, detail="Username cannot be empty.")
+        return username
 class TokenData(BaseModel):
     """Schema to structure token data"""
 

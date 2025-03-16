@@ -46,12 +46,12 @@ async def register(
     access_token = user_service.create_access_token(user.id)
     refresh_token = user_service.create_refresh_token(user_id=user.id)
 
-    background_tasks.add_task(
-        user_service.send_verification_mail,
-        user_schema.email,
-        http_request,
-        user_schema,
-    )
+    # background_tasks.add_task(
+    #     user_service.send_verification_mail,
+    #     user_schema.email,
+    #     http_request,
+    #     user_schema,
+    # )
 
     response = auth_response(
         status_code=201,
@@ -194,13 +194,13 @@ def login(
     access_token = user_service.create_access_token(user.id)
     refresh_token = user_service.create_refresh_token(user_id=user.id)
 
-    user_orgs = set(user.owned_organisations)
-    organisations = []
-    for org in user_orgs:
-        organisations.append(org)
-        org_campaign = []
-        for campaign in org.campaigns:
-            org_campaign.append(campaign)
+    # user_orgs = set(user.owned_organisations)
+    # organisations = []
+    # for org in user_orgs:
+    #     organisations.append(org)
+    #     org_campaign = []
+    #     for campaign in org.campaigns:
+    #         org_campaign.append(campaign)
 
     response = auth_response(
         status_code=status.HTTP_200_OK,

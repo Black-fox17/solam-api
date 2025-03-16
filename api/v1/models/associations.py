@@ -15,12 +15,6 @@ user_organisation_association = Table(
         "user_id", String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     ),
     Column(
-        "organisation_id",
-        String,
-        ForeignKey("organisations.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
         "role",
         Enum("admin", "user", "guest", "owner", name="user_org_role"),
         nullable=False,

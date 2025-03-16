@@ -12,14 +12,14 @@ from datetime import datetime, timedelta, timezone
 # from fastapi import Depends, HTTPException, Request, Response, status
 from itsdangerous import URLSafeTimedSerializer
 from jose import JWTError, jwt
-# from passlib.context import CryptContext
+from passlib.context import CryptContext
 # from pydantic import EmailStr
-# from starlette import status
+from starlette import status
 from sqlalchemy.orm import Session
 
 from api.utils.settings import settings
 # from api.utils.cookies import OAuth2PasswordBearerWithCookie
-# from api.db.database import get_db
+from api.db.database import get_db
 from api.v1.models.user import User
 # from api.utils.email import Email, SendGridEmail
 # from api.utils.db_validators import check_model_existence
@@ -27,14 +27,14 @@ from api.v1.models.user import User
 # from api.v1.schemas.campaign import CampaignCreate
 # from functools import wraps
 from fastapi import HTTPException
-# from fastapi import Depends, Request
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 # verification_serializer = URLSafeTimedSerializer(
 #     settings.SECRET_KEY, salt="verification"
 # )
 # # oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/v1/auth/login")
-# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
@@ -104,6 +104,53 @@ class UserService:
         data = {"user_id": user_id, "exp": expires, "type": "access"}
         encoded_jwt = jwt.encode(data, settings.SECRET_KEY, settings.ALGORITHM)
         return encoded_jwt
+    def hash_password(self, password: str) -> str:
+        """Function to hash a password"""
+
+        hashed_password = pwd_context.hash(secret=password)
+        return hashed_password
+    
+    def authenticate_user(
+        self,
+        email: str,
+        password: str,
+        db: Session = Depends(get_db),
+    ) -> User | bool:
+        """
+        Authenticate a user based on their email and password.
+
+        Parameters:
+        email (str): The email of the user to be authenticated.
+        password (str): The password of the user to be authenticated.
+        db (Session, optional): The database session object to be used for querying the user. If not provided, the function will use the session object provided by the load function.
+
+        Returns:
+        Union[User, bool]: If the user is authenticated and exists in the database, the User object is returned. If the user does not exist or the password is incorrect, False is returned.
+
+        Note:
+        This function queries the database to find the user with the provided email.
+        It then verifies the password using the verify_password function.
+        If the user is authenticated, the User object is returned. Otherwise, False is returned.
+        """
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail=[{"msg": "User not found"}],
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not self.verify_password(password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=[{"msg": "Incorrect email or password"}],
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        print(user)
+        return user
+    def verify_password(self, password: str, hash: str) -> bool:
+        """Function to verify a hashed password"""
+
+        return pwd_context.verify(secret=password, hash=hash)
 
 #     def create_admin(self, db: Session, schema: CreateUser) -> User:
 #         """Creates a new admin"""
@@ -124,17 +171,6 @@ class UserService:
 #         db.refresh(user)
 
 #         return user
-
-#     def hash_password(self, password: str) -> str:
-#         """Function to hash a password"""
-
-#         hashed_password = pwd_context.hash(secret=password)
-#         return hashed_password
-
-#     def verify_password(self, password: str, hash: str) -> bool:
-#         """Function to verify a hashed password"""
-
-#         return pwd_context.verify(secret=password, hash=hash)
 
 #     def generate_token(self, email: List[EmailStr]) -> str:
 #         """
@@ -375,43 +411,7 @@ class UserService:
 
 #         return get_current_role
 
-#     def authenticate_user(
-#         self,
-#         email: str,
-#         password: str,
-#         db: Session = Depends(get_db),
-#     ) -> User | bool:
-#         """
-#         Authenticate a user based on their email and password.
-
-#         Parameters:
-#         email (str): The email of the user to be authenticated.
-#         password (str): The password of the user to be authenticated.
-#         db (Session, optional): The database session object to be used for querying the user. If not provided, the function will use the session object provided by the load function.
-
-#         Returns:
-#         Union[User, bool]: If the user is authenticated and exists in the database, the User object is returned. If the user does not exist or the password is incorrect, False is returned.
-
-#         Note:
-#         This function queries the database to find the user with the provided email.
-#         It then verifies the password using the verify_password function.
-#         If the user is authenticated, the User object is returned. Otherwise, False is returned.
-#         """
-#         user = db.query(User).filter(User.email == email).first()
-#         if not user:
-#             raise HTTPException(
-#                 status_code=404,
-#                 detail=[{"msg": "User not found"}],
-#                 headers={"WWW-Authenticate": "Bearer"},
-#             )
-#         if not self.verify_password(password, user.password):
-#             raise HTTPException(
-#                 status_code=status.HTTP_401_UNAUTHORIZED,
-#                 detail=[{"msg": "Incorrect email or password"}],
-#                 headers={"WWW-Authenticate": "Bearer"},
-#             )
-#         return user
-
+    
 #     def delete_access_cookies(self, response: Response):
 #         """
 #         Delete the access token cookie from the response.
@@ -585,4 +585,4 @@ class UserService:
 #         return decorator
 
 
-# user_service = UserService()
+user_service = UserService()

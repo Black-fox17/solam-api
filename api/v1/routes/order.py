@@ -14,6 +14,7 @@ async def create(
     order: OrderSchema,
     db: Session = Depends(get_db)
 ):
+    order.service = order.service.upper()
     order_log = order_service.create_order(order,db)
     return success_response(
         status_code=201,

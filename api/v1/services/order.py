@@ -12,3 +12,7 @@ class Orders:
         db.refresh(order)
 
         return order
+    
+
+
+order_service = Orders()

@@ -17,7 +17,7 @@ class ContactRequest(Base):
 
     id = Column(String, primary_key=True, index=True, default=lambda: str(uuid7()))
     name = Column(String, nullable=False)
-    email = Column(String, nullable=False, unique=True, index=True)
+    email = Column(String, nullable=False, index=True)
     phone = Column(String, nullable=False)
     service = Column(Enum(ServiceType), nullable=False)
     message = Column(Text, nullable=True)

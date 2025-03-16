@@ -1,9 +1,10 @@
-from sqlalchemy import Column, String, Text, Enum, DateTime,func
+from sqlalchemy import Column, String, Text, Enum as SQLAlchemyEnum, DateTime, func
 from api.db.database import Base
 from uuid_extensions import uuid7
+import enum  # Import Python's enum module
 
 # Enum for Service Types
-class ServiceType(Enum):
+class ServiceType(enum.Enum):  # Use Python's enum.Enum
     PATHOLOGY = "pathology"
     HISTOLOGY = "histology"
     AUTOPSY = "autopsy"
@@ -19,6 +20,6 @@ class ContactRequest(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=False, index=True)
     phone = Column(String, nullable=False)
-    service = Column(Enum(ServiceType), nullable=False)
+    service = Column(SQLAlchemyEnum(ServiceType), nullable=False)  # Use SQLAlchemy's Enum
     message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

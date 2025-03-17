@@ -23,7 +23,7 @@ async def create(
     )
 
 @orders.get("")
-async def get_orders(current_user = Depends(user_service.get_current_user), db: Session = Depends(get_db)):
+async def get_orders(db: Session = Depends(get_db)):
 
     orders = order_service.fetch_all(db=db)
     if not orders:

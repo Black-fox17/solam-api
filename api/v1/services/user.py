@@ -7,7 +7,7 @@ from api.v1.schemas.user import CreateUser
 # from typing import List, Any, Optional, Annotated
 
 from datetime import datetime, timedelta, timezone
-# from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
 
 # from fastapi import Depends, HTTPException, Request, Response, status
 from itsdangerous import URLSafeTimedSerializer
@@ -18,7 +18,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 
 from api.utils.settings import settings
-# from api.utils.cookies import OAuth2PasswordBearerWithCookie
+from api.utils.cookies import OAuth2PasswordBearerWithCookie
 from api.db.database import get_db
 from api.v1.models.user import User
 # from api.utils.email import Email, SendGridEmail
@@ -33,39 +33,11 @@ from sqlalchemy.orm import Session
 # verification_serializer = URLSafeTimedSerializer(
 #     settings.SECRET_KEY, salt="verification"
 # )
-# # oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
-
-#     def get_user_by_id(self, db: Session, request: Request, id: str):
-#         """Fetches a user by their id"""
-#         authorization: str = request.headers.get("Authorization")
-#         if not authorization or not authorization.startswith("Bearer "):
-#             raise HTTPException(
-#                 status_code=401, detail="Invalid or missing authorization token")
-
-#         access_token = authorization.split("Bearer ")[1]
-
-#         token = self.verify_access_token(access_token, HTTPException(
-#             status_code=401,
-#             detail="Could not validate credentials",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         ))
-
-#         user = check_model_existence(db, User, token.id)
-#         check_user = check_model_existence(db, User, id)
-#         if not user.is_admin and not check_user.is_active:
-#             raise HTTPException(
-#                 status_code=404,
-#                 detail="User does not exist",
-#             )
-
-#         if not user.is_deleted:
-#             return user
-#         return user
-
     async def create_user(self, schema: CreateUser, db: Session) -> User:
         ""
 
@@ -150,7 +122,75 @@ class UserService:
     def verify_password(self, password: str, hash: str) -> bool:
         """Function to verify a hashed password"""
 
-        return pwd_context.verify(secret=password, hash=hash)
+        return pwd_context.verify(secret=password, hash=hash)\
+        
+    def get_current_user(self, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+        """
+        Retrieve the current user based on the provided access token.
+
+        Parameters:
+        token (str, optional): The access token to be used for authentication.
+        If not provided, the function will use the token provided by the OAuth2PasswordBearerWithCookie.
+        db (Session, optional): The database session object to be used for querying the user.
+        If not provided, the function will use the session object provided by the load function.
+
+        Returns:
+        User: The User object representing the current user.
+
+        Raises:
+        HTTPException: If the access token is not valid or the user does not exist in the database.
+
+        Note:
+        This function decodes the access token using the JWT library, retrieves the username from the payload,
+        and queries the database to find the corresponding user.
+        If the access token is not valid or the user does not exist,
+        an HTTPException is raised with appropriate error details.
+        """
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
+            user_id: str = payload.get("user_id")
+            if user_id is None:
+                raise credentials_exception
+        except JWTError:
+            raise credentials_exception
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise credentials_exception
+        return user
+
+#     def get_user_by_id(self, db: Session, request: Request, id: str):
+#         """Fetches a user by their id"""
+#         authorization: str = request.headers.get("Authorization")
+#         if not authorization or not authorization.startswith("Bearer "):
+#             raise HTTPException(
+#                 status_code=401, detail="Invalid or missing authorization token")
+
+#         access_token = authorization.split("Bearer ")[1]
+
+#         token = self.verify_access_token(access_token, HTTPException(
+#             status_code=401,
+#             detail="Could not validate credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         ))
+
+#         user = check_model_existence(db, User, token.id)
+#         check_user = check_model_existence(db, User, id)
+#         if not user.is_admin and not check_user.is_active:
+#             raise HTTPException(
+#                 status_code=404,
+#                 detail="User does not exist",
+#             )
+
+#         if not user.is_deleted:
+#             return user
+#         return user
 
 #     def create_admin(self, db: Session, schema: CreateUser) -> User:
 #         """Creates a new admin"""
@@ -321,46 +361,6 @@ class UserService:
 #         verified: bool = pwd_context.verify(plain_password, hashed_password)
 #         return verified
     
-#     def get_current_user(self, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-#         """
-#         Retrieve the current user based on the provided access token.
-
-#         Parameters:
-#         token (str, optional): The access token to be used for authentication.
-#         If not provided, the function will use the token provided by the OAuth2PasswordBearerWithCookie.
-#         db (Session, optional): The database session object to be used for querying the user.
-#         If not provided, the function will use the session object provided by the load function.
-
-#         Returns:
-#         User: The User object representing the current user.
-
-#         Raises:
-#         HTTPException: If the access token is not valid or the user does not exist in the database.
-
-#         Note:
-#         This function decodes the access token using the JWT library, retrieves the username from the payload,
-#         and queries the database to find the corresponding user.
-#         If the access token is not valid or the user does not exist,
-#         an HTTPException is raised with appropriate error details.
-#         """
-#         credentials_exception = HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Could not validate credentials",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-#         try:
-#             payload = jwt.decode(
-#                 token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-#             )
-#             user_id: str = payload.get("user_id")
-#             if user_id is None:
-#                 raise credentials_exception
-#         except JWTError:
-#             raise credentials_exception
-#         user = db.query(User).filter(User.id == user_id).first()
-#         if user is None:
-#             raise credentials_exception
-#         return user
 
 
 #     def check_authorization(self, required_role: str):

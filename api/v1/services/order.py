@@ -13,6 +13,9 @@ class Orders:
 
         return order
     
+    def fetch_all(self, db:Session):
+        query = db.query(ContactRequest)
+        return query.all()
 
 
 order_service = Orders()

@@ -7,7 +7,7 @@ from api.v1.schemas.user import CreateUser
 # from typing import List, Any, Optional, Annotated
 
 from datetime import datetime, timedelta, timezone
-from fastapi.security import OAuth2PasswordBearer
+# from fastapi.security import OAuth2PasswordBearer
 
 # from fastapi import Depends, HTTPException, Request, Response, status
 from itsdangerous import URLSafeTimedSerializer
@@ -18,7 +18,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 
 from api.utils.settings import settings
-# from api.utils.cookies import OAuth2PasswordBearerWithCookie
+from api.utils.cookies import OAuth2PasswordBearerWithCookie
 from api.db.database import get_db
 from api.v1.models.user import User
 # from api.utils.email import Email, SendGridEmail
@@ -33,7 +33,7 @@ from sqlalchemy.orm import Session
 # verification_serializer = URLSafeTimedSerializer(
 #     settings.SECRET_KEY, salt="verification"
 # )
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/v1/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
